@@ -5,7 +5,7 @@
   "main": "src/grabber.js",
   "scripts": {
     "start": "node src/grabber.js",
-    "server": "node src/grabber.js --server",
+    "server": "node src/server.js",
     "qr": "node src/grabber.js",
     "webhook:test": "node src/grabber.js --webhook"
   },

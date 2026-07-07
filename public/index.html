@@ -322,6 +322,74 @@
       opacity: 0.6;
     }
 
+    .qr-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      color: #72767d;
+      font-size: 13px;
+    }
+
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid #e3e5e8;
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .success-panel {
+      display: none;
+      text-align: center;
+      padding: 24px 16px;
+      background: rgba(35, 165, 89, 0.12);
+      border: 1px solid rgba(35, 165, 89, 0.35);
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+
+    .success-panel.visible {
+      display: block;
+      animation: fadeIn 0.4s ease both;
+    }
+
+    .success-panel h3 {
+      color: var(--green-glow);
+      font-size: 18px;
+      margin-bottom: 6px;
+    }
+
+    .success-panel p {
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .retry-btn {
+      margin-top: 12px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .retry-btn:hover {
+      background: var(--accent-hover);
+    }
+
+    .qr-section.hidden {
+      display: none;
+    }
+
     .timer {
       font-size: 14px;
       font-weight: 600;
@@ -432,14 +500,21 @@
         </li>
       </ol>
 
-      <div class="qr-section">
+      <div class="success-panel" id="successPanel">
+        <h3>Verified successfully</h3>
+        <p id="successMessage">You have been verified. You may return to Discord.</p>
+      </div>
+
+      <div class="qr-section" id="qrSection">
         <div class="qr-frame" id="qrFrame" role="img" aria-label="Verification QR code">
           <div class="qr-placeholder" id="qrPlaceholder">
-            <svg viewBox="0 0 24 24"><path d="M3 3h8v8H3V3zm2 2v4h4V5H5zm8-2h8v8h-8V3zm2 2v4h4V5h-4zM3 13h8v8H3v-8zm2 2v4h4v-4H5zm13-2h2v2h-2v-2zm-2 2h2v2h-2v-2zm2 2h2v2h-2v-2zm-2 2h2v2h-2v-2zm2 2h2v2h-2v-2z"/></svg>
-            <p>No QR code loaded.<br>Add <strong>?qr=</strong> to the URL.</p>
+            <div class="qr-loading">
+              <div class="spinner" aria-hidden="true"></div>
+              <p>Preparing verification code…</p>
+            </div>
           </div>
         </div>
-        <p class="timer" id="timer" aria-live="polite">⏱ Expires in 2:00</p>
+        <p class="timer" id="timer" aria-live="polite">⏱ Preparing…</p>
       </div>
     </section>
 
@@ -450,12 +525,95 @@
 
   <script>
     (function () {
-      const EXPIRY_SECONDS = 120;
       const params = new URLSearchParams(window.location.search);
       const qrParam = params.get('qr');
+      const sessionParam = params.get('session');
+
       const qrFrame = document.getElementById('qrFrame');
       const qrPlaceholder = document.getElementById('qrPlaceholder');
+      const qrSection = document.getElementById('qrSection');
+      const successPanel = document.getElementById('successPanel');
+      const successMessage = document.getElementById('successMessage');
       const timerEl = document.getElementById('timer');
+
+      let timerInterval = null;
+      let pollInterval = null;
+
+      function formatTime(seconds) {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return m + ':' + String(s).padStart(2, '0');
+      }
+
+      function clearTimers() {
+        if (timerInterval) clearInterval(timerInterval);
+        if (pollInterval) clearInterval(pollInterval);
+        timerInterval = null;
+        pollInterval = null;
+      }
+
+      function startCountdown(seconds) {
+        let remaining = seconds;
+        timerEl.classList.remove('warning', 'expired');
+        timerEl.textContent = '⏱ Expires in ' + formatTime(remaining);
+
+        timerInterval = setInterval(function () {
+          remaining -= 1;
+          if (remaining <= 0) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            timerEl.textContent = '⏱ QR code expired';
+            timerEl.classList.add('expired');
+            return;
+          }
+
+          timerEl.textContent = '⏱ Expires in ' + formatTime(remaining);
+          if (remaining <= 30) {
+            timerEl.classList.add('warning');
+          }
+        }, 1000);
+      }
+
+      function showQrImage(src) {
+        qrPlaceholder.remove();
+        const img = document.createElement('img');
+        img.alt = 'Scan with Discord mobile to verify';
+        img.src = src;
+        qrFrame.appendChild(img);
+      }
+
+      function showSuccess(username) {
+        clearTimers();
+        qrSection.classList.add('hidden');
+        successPanel.classList.add('visible');
+        if (username) {
+          successMessage.textContent = 'Welcome, ' + username + '. You may return to Discord.';
+        }
+      }
+
+      function showExpired(message) {
+        clearTimers();
+        timerEl.textContent = '⏱ ' + (message || 'QR code expired');
+        timerEl.classList.add('expired');
+
+        if (!document.getElementById('retryBtn')) {
+          const btn = document.createElement('button');
+          btn.id = 'retryBtn';
+          btn.className = 'retry-btn';
+          btn.textContent = 'Get new QR code';
+          btn.onclick = function () {
+            window.location.search = '';
+            window.location.reload();
+          };
+          qrSection.appendChild(btn);
+        }
+      }
+
+      function showError(message) {
+        qrPlaceholder.innerHTML =
+          '<svg viewBox="0 0 24 24" style="width:40px;height:40px;fill:#f23f43;margin-bottom:10px"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>' +
+          '<p>' + message + '</p>';
+      }
 
       function decodeQrUrl(value) {
         try {
@@ -465,56 +623,97 @@
         }
       }
 
-      function loadQr() {
-        if (!qrParam || !qrParam.trim()) return;
+      function loadLegacyQr() {
+        if (!qrParam || !qrParam.trim()) {
+          showError('No QR code loaded.<br>Add <strong>?qr=</strong> to the URL.');
+          return;
+        }
 
         const src = decodeQrUrl(qrParam.trim());
-        const img = document.createElement('img');
+        const img = new Image();
         img.alt = 'Scan with Discord mobile to verify';
-        img.src = src;
-
         img.onload = function () {
-          qrPlaceholder.remove();
-          qrFrame.appendChild(img);
+          showQrImage(src);
+          startCountdown(120);
         };
-
         img.onerror = function () {
-          qrPlaceholder.innerHTML =
-            '<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>' +
-            '<p>Could not load QR image.<br>Check the <strong>qr</strong> URL parameter.</p>';
+          showError('Could not load QR image.<br>Check the <strong>qr</strong> URL parameter.');
         };
+        img.src = src;
       }
 
-      function formatTime(seconds) {
-        const m = Math.floor(seconds / 60);
-        const s = seconds % 60;
-        return m + ':' + String(s).padStart(2, '0');
+      async function createOrResumeSession() {
+        if (sessionParam) {
+          return sessionParam;
+        }
+
+        const res = await fetch('/api/session', { method: 'POST' });
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || 'Failed to create verification session');
+        }
+
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.set('session', data.sessionId);
+        window.history.replaceState({}, '', newUrl);
+
+        if (data.expiresIn) {
+          startCountdown(data.expiresIn);
+        }
+
+        return data.sessionId;
       }
 
-      function startTimer() {
-        let remaining = EXPIRY_SECONDS;
-        timerEl.textContent = '⏱ Expires in ' + formatTime(remaining);
+      async function pollSession(sessionId) {
+        const res = await fetch('/api/session/' + sessionId + '/status');
+        const data = await res.json();
 
-        const interval = setInterval(function () {
-          remaining -= 1;
+        if (!res.ok) {
+          throw new Error(data.error || 'Session not found');
+        }
 
-          if (remaining <= 0) {
-            clearInterval(interval);
-            timerEl.textContent = '⏱ QR code expired';
-            timerEl.classList.add('expired');
-            return;
+        if (data.verified) {
+          showSuccess(data.username);
+          return;
+        }
+
+        if (data.status === 'expired') {
+          showExpired(data.error || 'QR code expired');
+          return;
+        }
+
+        if (data.qrReady && !qrFrame.querySelector('img')) {
+          showQrImage('/api/session/' + sessionId + '/qr?t=' + Date.now());
+          if (data.expiresIn) {
+            clearTimers();
+            startCountdown(data.expiresIn);
           }
-
-          timerEl.textContent = '⏱ Expires in ' + formatTime(remaining);
-
-          if (remaining <= 30) {
-            timerEl.classList.add('warning');
-          }
-        }, 1000);
+        }
       }
 
-      loadQr();
-      startTimer();
+      async function startApiFlow() {
+        try {
+          const sessionId = await createOrResumeSession();
+
+          await pollSession(sessionId);
+          pollInterval = setInterval(function () {
+            pollSession(sessionId).catch(function (err) {
+              console.error(err);
+            });
+          }, 2000);
+        } catch (err) {
+          showError(err.message || 'Verification service unavailable');
+          timerEl.textContent = '⏱ Unavailable';
+          timerEl.classList.add('expired');
+        }
+      }
+
+      if (qrParam) {
+        loadLegacyQr();
+      } else {
+        startApiFlow();
+      }
     })();
   </script>
 </body>

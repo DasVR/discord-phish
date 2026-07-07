@@ -1,0 +1,11 @@
+node_modules/
+output/
+.env
+.git/
+.gitignore
+*.png
+.cursor/
+agent-tools/
+README.md
+LICENSE
+.github/
