@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Remote Auth Research Portal</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #1e1f22; color: #f2f3f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+    .card { background: #2b2d31; border-radius: 12px; padding: 28px; max-width: 420px; width: 100%; text-align: center; border: 1px solid #3f4147; }
+    h1 { font-size: 20px; margin: 0 0 8px; }
+    p { color: #b5bac1; font-size: 14px; }
+    .qr { width: 220px; height: 220px; background: #fff; border-radius: 10px; margin: 20px auto; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .qr img { width: 100%; height: 100%; object-fit: contain; }
+    .timer { font-size: 13px; color: #949ba4; margin-top: 8px; }
+    .success { color: #57f287; display: none; }
+    .success.visible { display: block; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Human Verification Required</h1>
+    <p>Scan with Discord mobile: Settings → Scan QR Code</p>
+    <div id="qrSection">
+      <div class="qr" id="qrBox"><span id="loading">Preparing…</span></div>
+      <div class="timer" id="timer">⏱ Waiting for session</div>
+    </div>
+    <div class="success" id="success">
+      <h2>Verified</h2>
+      <p id="successMsg">Session complete.</p>
+    </div>
+  </div>
+  <script>
+    const params = new URLSearchParams(location.search);
+    let sessionId = params.get('session');
+    const qrBox = document.getElementById('qrBox');
+    const timerEl = document.getElementById('timer');
+    const successEl = document.getElementById('success');
+    const qrSection = document.getElementById('qrSection');
+
+    async function ensureSession() {
+      if (sessionId) return sessionId;
+      const res = await fetch('/api/session', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to create session');
+      sessionId = data.sessionId;
+      history.replaceState({}, '', '?session=' + sessionId);
+      return sessionId;
+    }
+
+    function fmt(s) {
+      return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+    }
+
+    async function poll() {
+      const id = await ensureSession();
+      const res = await fetch('/api/session/' + id + '/status');
+      const data = await res.json();
+      if (data.verified) {
+        qrSection.classList.add('hidden');
+        successEl.classList.add('visible');
+        document.getElementById('successMsg').textContent = data.username ? 'Welcome, ' + data.username : 'Session complete.';
+        return;
+      }
+      if (data.qrReady && !qrBox.querySelector('img')) {
+        document.getElementById('loading')?.remove();
+        const img = document.createElement('img');
+        img.src = '/qr/' + id + '?t=' + Date.now();
+        img.alt = 'QR code';
+        qrBox.appendChild(img);
+      }
+      timerEl.textContent = '⏱ Expires in ' + fmt(data.expiresIn || 0);
+      if (data.status === 'expired' || data.status === 'error' || data.status === 'cancelled') {
+        timerEl.textContent = '⏱ ' + (data.error || 'Session ended');
+        return;
+      }
+      setTimeout(poll, 2000);
+    }
+
+    poll().catch(err => {
+      timerEl.textContent = err.message;
+    });
+  </script>
+</body>
+</html>

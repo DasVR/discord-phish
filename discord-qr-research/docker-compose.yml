@@ -1,0 +1,39 @@
+services:
+  research-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: research-bot
+    network_mode: bridge
+    ports:
+      - "${QR_SERVER_PORT:-8080}:8080"
+    env_file:
+      - .env
+    environment:
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
+      ADMIN_USER_IDS: ${ADMIN_IDS:-${ADMIN_USER_IDS:-}}
+      WEBHOOK_URL: ${WEBHOOK_URL:-}
+      QR_SERVER_HOST: 0.0.0.0
+      QR_SERVER_PORT: 8080
+    mem_limit: 256m
+    cpus: 0.5
+    restart: unless-stopped
+    volumes:
+      - ./state.json:/app/state.json
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=3)",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
